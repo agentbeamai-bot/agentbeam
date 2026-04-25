@@ -2,6 +2,7 @@
 
 import { useCallback, useMemo, useState } from 'react';
 import { useQuery } from '@tanstack/react-query';
+import { useProjectContext } from '@/lib/project-context';
 import {
   Card,
   CardContent,
@@ -128,13 +129,8 @@ const STATUS_STYLES: Record<string, string> = {
 // Component
 // ---------------------------------------------------------------------------
 export default function TracesPage() {
-  // TODO: Replace with real project context when project switcher is built.
-  // For now, use a query param or fall back to empty (the API will return 400).
-  const [projectId] = useState(() => {
-    if (typeof window === 'undefined') return '';
-    const params = new URLSearchParams(window.location.search);
-    return params.get('project_id') ?? '';
-  });
+  const { projectId: contextProjectId } = useProjectContext();
+  const projectId = contextProjectId ?? '';
 
   const [filters, setFilters] = useState<Filters>({
     search: '',
@@ -402,11 +398,8 @@ export default function TracesPage() {
             <div className="flex h-[300px] flex-col items-center justify-center gap-2 text-muted-foreground">
               <InboxIcon className="size-10 opacity-40" />
               <p className="text-sm">
-                No project selected. Add{' '}
-                <code className="rounded bg-muted px-1 py-0.5 text-xs">
-                  ?project_id=...
-                </code>{' '}
-                to the URL.
+                No project selected. Create one in{' '}
+                <a href="/settings" className="text-primary underline underline-offset-2">Settings</a>.
               </p>
             </div>
           ) : isLoading ? (

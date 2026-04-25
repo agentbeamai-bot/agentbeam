@@ -63,11 +63,26 @@ async function resolveAuth(
   }
 
   const admin = createAdminClient();
+  const { data: project } = await admin
+    .from('projects')
+    .select('org_id')
+    .eq('id', projectId)
+    .single();
+
+  if (!project) {
+    return {
+      error: NextResponse.json(
+        { error: 'Project not found or access denied' },
+        { status: 403 },
+      ),
+    };
+  }
+
   const { data: membership } = await admin
     .from('org_members')
-    .select('id, projects!inner(id)')
+    .select('id')
     .eq('user_id', user.id)
-    .eq('projects.id', projectId)
+    .eq('org_id', project.org_id)
     .single();
 
   if (!membership) {

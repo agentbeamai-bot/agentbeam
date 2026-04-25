@@ -2,6 +2,7 @@
 
 import { useState, useMemo } from 'react';
 import { useQuery } from '@tanstack/react-query';
+import { useProjectContext } from '@/lib/project-context';
 import {
   AreaChart,
   Area,
@@ -135,12 +136,14 @@ function periodRange(period: Period): { from: string; to: string } {
 async function fetchCosts<T>(
   groupBy: string,
   period: Period,
+  projectId: string,
 ): Promise<{ group_by: string; data: T[] }> {
   const { from, to } = periodRange(period);
   const params = new URLSearchParams({
     group_by: groupBy,
     from,
     to,
+    project_id: projectId,
   });
   const res = await fetch(`/api/v1/costs?${params}`);
   if (!res.ok) throw new Error(`Failed to fetch costs (${groupBy})`);
@@ -152,27 +155,32 @@ async function fetchCosts<T>(
 // ---------------------------------------------------------------------------
 
 export default function CostsPage() {
+  const { projectId } = useProjectContext();
   const [period, setPeriod] = useState<Period>('30d');
 
   // Fetch all groupings in parallel
   const hourQuery = useQuery({
-    queryKey: ['costs', 'hour', period],
-    queryFn: () => fetchCosts<HourRow>('hour', period),
+    queryKey: ['costs', 'hour', period, projectId],
+    queryFn: () => fetchCosts<HourRow>('hour', period, projectId!),
+    enabled: !!projectId,
   });
 
   const modelHourQuery = useQuery({
-    queryKey: ['costs', 'model_hour', period],
-    queryFn: () => fetchCosts<ModelHourRow>('model_hour', period),
+    queryKey: ['costs', 'model_hour', period, projectId],
+    queryFn: () => fetchCosts<ModelHourRow>('model_hour', period, projectId!),
+    enabled: !!projectId,
   });
 
   const modelQuery = useQuery({
-    queryKey: ['costs', 'model', period],
-    queryFn: () => fetchCosts<ModelRow>('model', period),
+    queryKey: ['costs', 'model', period, projectId],
+    queryFn: () => fetchCosts<ModelRow>('model', period, projectId!),
+    enabled: !!projectId,
   });
 
   const agentModelQuery = useQuery({
-    queryKey: ['costs', 'agent_model', period],
-    queryFn: () => fetchCosts<AgentModelRow>('agent_model', period),
+    queryKey: ['costs', 'agent_model', period, projectId],
+    queryFn: () => fetchCosts<AgentModelRow>('agent_model', period, projectId!),
+    enabled: !!projectId,
   });
 
   const isLoading =

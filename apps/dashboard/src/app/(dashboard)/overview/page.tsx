@@ -1,6 +1,5 @@
 'use client';
 
-import { useState } from 'react';
 import {
   Card,
   CardContent,
@@ -41,9 +40,8 @@ import {
 } from 'recharts';
 import {
   useDashboardData,
-  useProjects,
-  type Project,
 } from '@/lib/hooks/use-dashboard-data';
+import { useProjectContext } from '@/lib/project-context';
 
 // ---------------------------------------------------------------------------
 // Formatters
@@ -273,51 +271,15 @@ function AgentTooltipContent({
 }
 
 // ---------------------------------------------------------------------------
-// Project Selector (simple inline dropdown)
-// ---------------------------------------------------------------------------
-function ProjectSelector({
-  projects,
-  selected,
-  onSelect,
-}: {
-  projects: Project[];
-  selected: string | null;
-  onSelect: (id: string) => void;
-}) {
-  if (projects.length <= 1) return null;
-
-  return (
-    <select
-      value={selected ?? ''}
-      onChange={(e) => onSelect(e.target.value)}
-      className="h-8 rounded-md border bg-background px-2 text-sm text-foreground"
-    >
-      {projects.map((p) => (
-        <option key={p.id} value={p.id}>
-          {p.name}
-        </option>
-      ))}
-    </select>
-  );
-}
-
-// ---------------------------------------------------------------------------
 // Main Page
 // ---------------------------------------------------------------------------
 export default function OverviewPage() {
   const {
-    data: projects,
+    projectId: activeProjectId,
+    projects,
     isLoading: projectsLoading,
     error: projectsError,
-  } = useProjects();
-
-  const [selectedProjectId, setSelectedProjectId] = useState<string | null>(
-    null,
-  );
-
-  // Auto-select first project when loaded
-  const activeProjectId =
-    selectedProjectId ?? (projects && projects.length > 0 ? projects[0].id : null);
+  } = useProjectContext();
 
   const { stats, costTimeseries, agentSummaries, isLoading, error } =
     useDashboardData(activeProjectId);
@@ -381,20 +343,13 @@ export default function OverviewPage() {
   return (
     <>
       {/* Header */}
-      <div className="flex items-center justify-between">
-        <div>
-          <h1 className="text-2xl font-semibold tracking-tight">
-            Mission Control
-          </h1>
-          <p className="text-muted-foreground">
-            Monitor your AI agents in real time.
-          </p>
-        </div>
-        <ProjectSelector
-          projects={projects}
-          selected={activeProjectId}
-          onSelect={setSelectedProjectId}
-        />
+      <div>
+        <h1 className="text-2xl font-semibold tracking-tight">
+          Mission Control
+        </h1>
+        <p className="text-muted-foreground">
+          Monitor your AI agents in real time.
+        </p>
       </div>
 
       {/* Stat Cards */}
