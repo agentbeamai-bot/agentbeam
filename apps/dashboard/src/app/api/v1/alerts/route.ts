@@ -102,7 +102,32 @@ export async function GET(request: NextRequest) {
     );
   }
 
-  return NextResponse.json({ alerts: alerts ?? [] });
+  // Fetch recent alert events for this project's alerts
+  const alertIds = (alerts ?? []).map((a) => a.id);
+  let events: Array<{
+    id: string;
+    alert_id: string;
+    triggered_at: string;
+    resolved_at: string | null;
+    details: Record<string, unknown> | null;
+  }> = [];
+
+  if (alertIds.length > 0) {
+    const { data: eventRows, error: eventsError } = await admin
+      .from('alert_events')
+      .select('*')
+      .in('alert_id', alertIds)
+      .order('triggered_at', { ascending: false })
+      .limit(20);
+
+    if (eventsError) {
+      console.error('[alerts] events fetch error:', eventsError);
+    } else {
+      events = eventRows ?? [];
+    }
+  }
+
+  return NextResponse.json({ alerts: alerts ?? [], events });
 }
 
 // ---------------------------------------------------------------------------

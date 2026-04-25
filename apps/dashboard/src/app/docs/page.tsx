@@ -193,7 +193,7 @@ export default function DocsPage() {
                 <p className="mb-2 text-sm font-medium text-zinc-300">
                   TypeScript / Node.js
                 </p>
-                <CodeBlock language="bash">{`npm install git+https://github.com/agentbeamai-bot/agentbeam.git#packages/sdk-node`}</CodeBlock>
+                <CodeBlock language="bash">{`npm install agentbeam`}</CodeBlock>
               </div>
             </div>
           </section>

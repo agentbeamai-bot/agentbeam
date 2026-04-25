@@ -61,6 +61,19 @@ interface Alert {
   updated_at: string;
 }
 
+interface AlertEvent {
+  id: string;
+  alert_id: string;
+  triggered_at: string;
+  resolved_at: string | null;
+  details: {
+    threshold?: number;
+    actual?: number;
+    message?: string;
+    [key: string]: unknown;
+  } | null;
+}
+
 // ---------------------------------------------------------------------------
 // Constants
 // ---------------------------------------------------------------------------
@@ -96,11 +109,13 @@ const ALERT_TYPE_META: Record<
 // API helpers
 // ---------------------------------------------------------------------------
 
-async function fetchAlerts(projectId: string): Promise<Alert[]> {
+async function fetchAlerts(
+  projectId: string,
+): Promise<{ alerts: Alert[]; events: AlertEvent[] }> {
   const res = await fetch(`/api/v1/alerts?project_id=${projectId}`);
   if (!res.ok) throw new Error('Failed to fetch alerts');
   const json = await res.json();
-  return json.alerts ?? [];
+  return { alerts: json.alerts ?? [], events: json.events ?? [] };
 }
 
 async function createAlert(payload: {
@@ -178,6 +193,7 @@ export default function AlertsPage() {
     queryKey: ['alerts', projectId],
     queryFn: () => fetchAlerts(projectId!),
     enabled: !!projectId,
+    select: (data) => data,
   });
 
   const createMutation = useMutation({
@@ -244,7 +260,9 @@ export default function AlertsPage() {
     });
   }, [name, type, threshold, email, enabled, projectId, createMutation]);
 
-  const alerts = alertsQuery.data ?? [];
+  const alerts = alertsQuery.data?.alerts ?? [];
+  const events = alertsQuery.data?.events ?? [];
+  const alertsById = new Map(alerts.map((a) => [a.id, a]));
 
   return (
     <>
@@ -485,6 +503,64 @@ export default function AlertsPage() {
                         >
                           <Trash2Icon className="size-4 text-destructive" />
                         </Button>
+                      </TableCell>
+                    </TableRow>
+                  );
+                })}
+              </TableBody>
+            </Table>
+          )}
+        </CardContent>
+      </Card>
+
+      {/* Recent Alert Events */}
+      <Card>
+        <CardHeader>
+          <CardTitle>Recent Alert Events</CardTitle>
+          <CardDescription>
+            The last 10 times an alert threshold was exceeded.
+          </CardDescription>
+        </CardHeader>
+        <CardContent>
+          {alertsQuery.isLoading ? (
+            <div className="flex h-[120px] items-center justify-center text-muted-foreground">
+              Loading events...
+            </div>
+          ) : events.length === 0 ? (
+            <div className="flex h-[120px] items-center justify-center text-muted-foreground text-sm">
+              No alert events yet. Events appear here when a threshold is breached.
+            </div>
+          ) : (
+            <Table>
+              <TableHeader>
+                <TableRow>
+                  <TableHead>Alert</TableHead>
+                  <TableHead>Type</TableHead>
+                  <TableHead>Triggered</TableHead>
+                  <TableHead>Details</TableHead>
+                </TableRow>
+              </TableHeader>
+              <TableBody>
+                {events.slice(0, 10).map((event) => {
+                  const parentAlert = alertsById.get(event.alert_id);
+                  const alertType = (parentAlert?.type ?? 'cost_threshold') as AlertType;
+                  const meta = ALERT_TYPE_META[alertType] ?? ALERT_TYPE_META.cost_threshold;
+                  return (
+                    <TableRow key={event.id}>
+                      <TableCell className="font-medium">
+                        {parentAlert?.name ?? 'Deleted alert'}
+                      </TableCell>
+                      <TableCell>
+                        <Badge variant={meta.variant}>{meta.label}</Badge>
+                      </TableCell>
+                      <TableCell className="text-sm text-muted-foreground">
+                        {formatRelativeTime(event.triggered_at)}
+                      </TableCell>
+                      <TableCell className="text-sm text-muted-foreground max-w-[300px] truncate">
+                        {event.details?.message ??
+                          (event.details?.actual != null
+                            ? `Actual: ${event.details.actual} (threshold: ${event.details.threshold})`
+                            : '--')}
                       </TableCell>
                     </TableRow>
                   );

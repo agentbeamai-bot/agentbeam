@@ -17,4 +17,6 @@
       "service": "agentbeam"
     }
   ]
+  // Secrets (set via `wrangler secret put <NAME>`):
+  // - RESEND_API_KEY
 }

@@ -323,7 +323,18 @@ export async function POST(request: NextRequest) {
     );
   }
 
-  // 7. Return success
+  // 7. Fire-and-forget alert evaluation
+  const baseUrl = request.nextUrl.origin;
+  fetch(`${baseUrl}/api/v1/alerts/evaluate`, {
+    method: 'POST',
+    headers: {
+      'Content-Type': 'application/json',
+      'X-AgentBeam-Key': apiKey,
+    },
+    body: JSON.stringify({ project_id: projectId }),
+  }).catch(() => {}); // Don't block ingest on alert evaluation
+
+  // 8. Return success
   return NextResponse.json({
     accepted: traceRows.length,
     trace_ids: [...new Set(traceRows.map((r) => r.trace_id))],
