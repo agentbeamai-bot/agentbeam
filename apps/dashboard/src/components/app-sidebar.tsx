@@ -165,7 +165,7 @@ export function AppSidebar() {
                 sideOffset={4}
                 className="w-[--radix-dropdown-menu-trigger-width] min-w-56"
               >
-                <DropdownMenuItem>
+                <DropdownMenuItem onClick={() => router.push('/account')}>
                   <SettingsIcon />
                   Account Settings
                 </DropdownMenuItem>

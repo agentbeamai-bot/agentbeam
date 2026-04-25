@@ -36,47 +36,36 @@ export default function SignupPage() {
       return;
     }
 
-    const supabase = createClient();
-    const { error } = await supabase.auth.signUp({
-      email,
-      password,
+    // Use server-side signup to skip email confirmation
+    const res = await fetch('/api/v1/auth/signup', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ email, password }),
     });
 
-    if (error) {
-      setError(error.message);
+    const data = await res.json();
+
+    if (!res.ok) {
+      setError(data.error || 'Signup failed');
       setLoading(false);
       return;
     }
 
-    setSuccess(true);
-    setLoading(false);
-  }
+    // Auto sign in after successful signup
+    const supabase = createClient();
+    const { error: signInError } = await supabase.auth.signInWithPassword({
+      email,
+      password,
+    });
 
-  if (success) {
-    return (
-      <div className="flex min-h-screen items-center justify-center bg-background px-4">
-        <Card className="w-full max-w-sm">
-          <CardHeader className="text-center">
-            <div className="mx-auto mb-2 flex size-10 items-center justify-center rounded-lg bg-primary text-primary-foreground">
-              <ZapIcon className="size-5" />
-            </div>
-            <CardTitle className="text-xl">Check your email</CardTitle>
-            <CardDescription>
-              We sent a confirmation link to <strong>{email}</strong>. Click it
-              to activate your account.
-            </CardDescription>
-          </CardHeader>
-          <CardFooter className="justify-center">
-            <Link
-              href="/login"
-              className="text-sm font-medium text-foreground underline-offset-4 hover:underline"
-            >
-              Back to sign in
-            </Link>
-          </CardFooter>
-        </Card>
-      </div>
-    );
+    if (signInError) {
+      // Account created but auto-login failed — redirect to login
+      router.push('/login');
+      return;
+    }
+
+    // Signed in — go to dashboard
+    router.push('/overview');
   }
 
   return (

@@ -186,7 +186,7 @@ export default function DocsPage() {
                 <p className="mb-2 text-sm font-medium text-zinc-300">
                   Python
                 </p>
-                <CodeBlock language="bash">{`pip install git+https://github.com/agentbeamai-bot/agentbeam.git#subdirectory=packages/sdk-python`}</CodeBlock>
+                <CodeBlock language="bash">{`pip install agentbeam`}</CodeBlock>
               </div>
 
               <div>
