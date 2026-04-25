@@ -644,6 +644,8 @@ function recordAnthropicSpan(
   };
 
   ab.addSpan(span);
+  // Flush immediately — critical for serverless where the process freezes after response
+  ab.flush().catch(() => {});
 }
 
 function recordOpenAISpan(
@@ -695,6 +697,7 @@ function recordOpenAISpan(
   };
 
   ab.addSpan(span);
+  ab.flush().catch(() => {});
 }
 
 function recordErrorSpan(
@@ -724,4 +727,5 @@ function recordErrorSpan(
   };
 
   ab.addSpan(span);
+  ab.flush().catch(() => {});
 }
