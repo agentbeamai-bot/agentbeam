@@ -66,14 +66,26 @@ function formatLatency(ms: number): string {
 
 function formatChartHour(isoString: string): string {
   const d = new Date(isoString);
-  const now = new Date();
-  const diffDays = Math.floor(
-    (now.getTime() - d.getTime()) / (1000 * 60 * 60 * 24),
-  );
-  if (diffDays === 0) {
-    return d.toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' });
-  }
   return d.toLocaleDateString([], { month: 'short', day: 'numeric' });
+}
+
+/**
+ * Given hourly timeseries data, return the indices of the first data point
+ * for each calendar day. Used as the `ticks` prop on XAxis to show one label
+ * per day instead of repeating the same date for every hour.
+ */
+function getDailyTicks(data: Array<{ hour: string }>): string[] {
+  const seen = new Set<string>();
+  const ticks: string[] = [];
+  for (const point of data) {
+    const d = new Date(point.hour);
+    const dateKey = `${d.getFullYear()}-${d.getMonth()}-${d.getDate()}`;
+    if (!seen.has(dateKey)) {
+      seen.add(dateKey);
+      ticks.push(point.hour);
+    }
+  }
+  return ticks;
 }
 
 function formatRelativeTime(iso: string): string {
@@ -418,12 +430,12 @@ export default function OverviewPage() {
                     >
                       <stop
                         offset="0%"
-                        stopColor="hsl(var(--primary))"
+                        stopColor="#3b82f6"
                         stopOpacity={0.3}
                       />
                       <stop
                         offset="100%"
-                        stopColor="hsl(var(--primary))"
+                        stopColor="#3b82f6"
                         stopOpacity={0}
                       />
                     </linearGradient>
@@ -436,6 +448,7 @@ export default function OverviewPage() {
                   <XAxis
                     dataKey="hour"
                     tickFormatter={formatChartHour}
+                    ticks={getDailyTicks(costTimeseries)}
                     tick={{ fontSize: 12 }}
                     className="fill-muted-foreground"
                     tickLine={false}
@@ -453,7 +466,7 @@ export default function OverviewPage() {
                   <Area
                     type="monotone"
                     dataKey="total_cost"
-                    stroke="hsl(var(--primary))"
+                    stroke="#3b82f6"
                     fill="url(#costGradient)"
                     strokeWidth={2}
                   />
@@ -507,7 +520,7 @@ export default function OverviewPage() {
                   <Tooltip content={<AgentTooltipContent />} />
                   <Bar
                     dataKey="request_count"
-                    fill="hsl(var(--primary))"
+                    fill="#3b82f6"
                     radius={[0, 4, 4, 0]}
                   />
                 </BarChart>
