@@ -145,7 +145,7 @@ if (!apiKey) {
 
         if (result && typeof (result as { then?: unknown }).then === 'function') {
           return (result as Promise<unknown>).then(
-            (response) => {
+            async (response) => {
               recordAnthropicSpan(client, response, {
                 traceId,
                 spanId,
@@ -153,9 +153,10 @@ if (!apiKey) {
                 modelName,
                 inputPreview,
               });
+              await client.flush();
               return response;
             },
-            (err: unknown) => {
+            async (err: unknown) => {
               recordErrorSpan(client, err, {
                 traceId,
                 spanId,
@@ -165,6 +166,7 @@ if (!apiKey) {
                 spanName: 'anthropic.messages.create',
                 provider: 'anthropic',
               });
+              await client.flush();
               throw err;
             },
           );
@@ -177,6 +179,8 @@ if (!apiKey) {
           modelName,
           inputPreview,
         });
+        // Sync path can't await, use fire-and-forget (long-running servers only)
+        client.flush().catch(() => {});
         return result;
       };
 
@@ -272,7 +276,7 @@ if (!apiKey) {
 
         if (result && typeof (result as { then?: unknown }).then === 'function') {
           return (result as Promise<unknown>).then(
-            (response) => {
+            async (response) => {
               recordOpenAISpan(client, response, {
                 traceId,
                 spanId,
@@ -280,9 +284,10 @@ if (!apiKey) {
                 modelName,
                 inputPreview,
               });
+              await client.flush();
               return response;
             },
-            (err: unknown) => {
+            async (err: unknown) => {
               recordErrorSpan(client, err, {
                 traceId,
                 spanId,
@@ -292,6 +297,7 @@ if (!apiKey) {
                 spanName: 'openai.chat.completions.create',
                 provider: 'openai',
               });
+              await client.flush();
               throw err;
             },
           );
@@ -304,6 +310,8 @@ if (!apiKey) {
           modelName,
           inputPreview,
         });
+        // Sync path can't await, use fire-and-forget (long-running servers only)
+        client.flush().catch(() => {});
         return result;
       };
 
@@ -432,7 +440,7 @@ function patchAnthropicLazy(
 
         if (result && typeof (result as { then?: unknown }).then === 'function') {
           return (result as Promise<unknown>).then(
-            (response) => {
+            async (response) => {
               recordAnthropicSpan(client, response, {
                 traceId,
                 spanId,
@@ -440,9 +448,10 @@ function patchAnthropicLazy(
                 modelName,
                 inputPreview,
               });
+              await client.flush();
               return response;
             },
-            (err: unknown) => {
+            async (err: unknown) => {
               recordErrorSpan(client, err, {
                 traceId,
                 spanId,
@@ -452,6 +461,7 @@ function patchAnthropicLazy(
                 spanName: 'anthropic.messages.create',
                 provider: 'anthropic',
               });
+              await client.flush();
               throw err;
             },
           );
@@ -464,6 +474,8 @@ function patchAnthropicLazy(
           modelName,
           inputPreview,
         });
+        // Sync path can't await, use fire-and-forget (long-running servers only)
+        client.flush().catch(() => {});
         return result;
       };
 
@@ -540,7 +552,7 @@ function patchOpenAILazy(
 
         if (result && typeof (result as { then?: unknown }).then === 'function') {
           return (result as Promise<unknown>).then(
-            (response) => {
+            async (response) => {
               recordOpenAISpan(client, response, {
                 traceId,
                 spanId,
@@ -548,9 +560,10 @@ function patchOpenAILazy(
                 modelName,
                 inputPreview,
               });
+              await client.flush();
               return response;
             },
-            (err: unknown) => {
+            async (err: unknown) => {
               recordErrorSpan(client, err, {
                 traceId,
                 spanId,
@@ -560,6 +573,7 @@ function patchOpenAILazy(
                 spanName: 'openai.chat.completions.create',
                 provider: 'openai',
               });
+              await client.flush();
               throw err;
             },
           );
@@ -572,6 +586,8 @@ function patchOpenAILazy(
           modelName,
           inputPreview,
         });
+        // Sync path can't await, use fire-and-forget (long-running servers only)
+        client.flush().catch(() => {});
         return result;
       };
 
@@ -644,8 +660,6 @@ function recordAnthropicSpan(
   };
 
   ab.addSpan(span);
-  // Flush immediately — critical for serverless where the process freezes after response
-  ab.flush().catch(() => {});
 }
 
 function recordOpenAISpan(
@@ -697,7 +711,6 @@ function recordOpenAISpan(
   };
 
   ab.addSpan(span);
-  ab.flush().catch(() => {});
 }
 
 function recordErrorSpan(
@@ -727,5 +740,4 @@ function recordErrorSpan(
   };
 
   ab.addSpan(span);
-  ab.flush().catch(() => {});
 }

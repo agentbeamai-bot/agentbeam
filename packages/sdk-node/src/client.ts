@@ -110,7 +110,7 @@ export class AgentBeamClient {
     };
 
     try {
-      const res = await fetch(`${this.apiUrl}/api/v1/ingest`, {
+      const res = await fetch(`${this.apiUrl}/ingest`, {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json',
