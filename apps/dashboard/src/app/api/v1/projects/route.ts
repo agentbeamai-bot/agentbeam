@@ -98,7 +98,7 @@ export async function POST(request: NextRequest) {
   if (auth.error) return auth.error;
   const { userId } = auth;
 
-  let body: { name: string; org_id?: string };
+  let body: { name: string; org_id?: string; environment?: string };
   try {
     body = await request.json();
   } catch {
@@ -232,8 +232,8 @@ export async function POST(request: NextRequest) {
     project_id: project.id,
     key_hash: keyHash,
     key_prefix: keyPrefix,
-    name: 'Default',
-    environment: 'production',
+    name: `${body.name.trim()} key`,
+    environment: body.environment || 'production',
   });
 
   if (keyError) {
