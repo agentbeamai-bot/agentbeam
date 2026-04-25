@@ -1,9 +1,23 @@
 {
   "name": "agentbeam",
-  "version": "0.1.0",
+  "version": "0.2.0",
   "description": "Monitor, debug, and manage the cost of AI agents in production",
   "main": "dist/index.js",
   "types": "dist/index.d.ts",
+  "exports": {
+    ".": {
+      "types": "./dist/index.d.ts",
+      "require": "./dist/index.js",
+      "import": "./dist/index.js",
+      "default": "./dist/index.js"
+    },
+    "./auto": {
+      "types": "./dist/auto.d.ts",
+      "require": "./dist/auto.js",
+      "import": "./dist/auto.js",
+      "default": "./dist/auto.js"
+    }
+  },
   "files": [
     "dist"
   ],

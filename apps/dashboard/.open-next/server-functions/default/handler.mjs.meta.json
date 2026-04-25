@@ -5487,7 +5487,7 @@
       "format": "cjs"
     },
     ".open-next/server-functions/default/.next/server/chunks/ssr/[root-of-the-server]__0qd32v7._.js": {
-      "bytes": 18164,
+      "bytes": 18738,
       "imports": [
         {
           "path": ".open-next/server-functions/default/node_modules/.pnpm/next@16.2.4_@babel+core@7.29.0_react-dom@19.2.4_react@19.2.4__react@19.2.4/node_modules/next/dist/shared/lib/no-fallback-error.external.js",
@@ -10181,7 +10181,7 @@
           "bytesInOutput": 23343
         },
         ".open-next/server-functions/default/.next/server/chunks/ssr/[root-of-the-server]__0qd32v7._.js": {
-          "bytesInOutput": 18366
+          "bytesInOutput": 18949
         },
         ".open-next/server-functions/default/.next/server/chunks/ssr/_next-internal_server_app_docs_page_actions_0xq87ie.js": {
           "bytesInOutput": 259
@@ -10436,7 +10436,7 @@
           "bytesInOutput": 66629
         }
       },
-      "bytes": 5226698
+      "bytes": 5227281
     }
   }
 }

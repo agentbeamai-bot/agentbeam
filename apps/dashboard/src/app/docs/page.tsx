@@ -247,43 +247,43 @@ export default function DocsPage() {
           {/* --------------------------------------------------------- */}
           <section className="mb-16">
             <SectionHeading id="initialize" icon={PlayIcon}>
-              Initialize
+              Start Tracing (Zero Code Changes)
             </SectionHeading>
             <p className="mb-6 text-sm text-zinc-400">
-              Add a few lines of code to start tracing every LLM call
-              automatically.
+              No code changes needed. Just set an environment variable and run your app.
+              AgentBeam automatically detects and traces all Anthropic and OpenAI calls.
             </p>
 
-            <div className="flex flex-col gap-4">
+            <div className="flex flex-col gap-6">
               <div>
                 <p className="mb-2 text-sm font-medium text-zinc-300">
-                  Python
+                  Python — run your script with AgentBeam
                 </p>
-                <CodeBlock language="python">{`import agentbeam
-
-agentbeam.init(
-    api_key="ab_your_key_here",
-    api_url="https://agentbeam.agentbeamai.workers.dev/api/v1",
-    agent_name="my-agent",
-)
-
-# That's it! All Anthropic and OpenAI calls are now auto-traced.`}</CodeBlock>
+                <CodeBlock language="bash">{`AGENTBEAM_API_KEY=ab_your_key_here python -m agentbeam your_script.py`}</CodeBlock>
+                <p className="mt-2 text-xs text-zinc-500">
+                  Or add one import at the top of your entry file: <code className="text-zinc-400">import agentbeam.auto</code>
+                </p>
               </div>
 
               <div>
                 <p className="mb-2 text-sm font-medium text-zinc-300">
-                  TypeScript
+                  Node.js — add to your environment
                 </p>
-                <CodeBlock language="typescript">{`import { AgentBeam } from 'agentbeam';
+                <CodeBlock language="bash">{`AGENTBEAM_API_KEY=ab_your_key_here node --require agentbeam/auto app.js`}</CodeBlock>
+                <p className="mt-2 text-xs text-zinc-500">
+                  Or add to .env: <code className="text-zinc-400">NODE_OPTIONS=--require agentbeam/auto</code>
+                </p>
+              </div>
 
-const ab = new AgentBeam({
-  apiKey: 'ab_your_key_here',
-  apiUrl: 'https://agentbeam.agentbeamai.workers.dev/api/v1',
-  agentName: 'my-agent',
-});
-
-const anthropic = ab.wrap(new Anthropic());
-// All calls through this client are now traced`}</CodeBlock>
+              <div>
+                <p className="mb-2 text-sm font-medium text-zinc-300">
+                  Next.js / Frameworks — just add to .env
+                </p>
+                <CodeBlock language="bash">{`AGENTBEAM_API_KEY=ab_your_key_here
+NODE_OPTIONS=--require agentbeam/auto`}</CodeBlock>
+                <p className="mt-2 text-xs text-zinc-500">
+                  That&apos;s it. Every Claude and OpenAI call is now traced automatically.
+                </p>
               </div>
             </div>
           </section>
