@@ -98,7 +98,7 @@ export async function POST(request: NextRequest) {
   if (auth.error) return auth.error;
   const { userId } = auth;
 
-  let body: { name: string; org_id: string };
+  let body: { name: string; org_id?: string };
   try {
     body = await request.json();
   } catch {
@@ -115,21 +115,74 @@ export async function POST(request: NextRequest) {
     );
   }
 
-  if (!body.org_id) {
-    return NextResponse.json(
-      { error: 'org_id is required' },
-      { status: 400 },
-    );
-  }
-
   const admin = createAdminClient();
+
+  let orgId = body.org_id;
+
+  // If no org_id provided, auto-create an organization for the user
+  if (!orgId) {
+    // Get user email for the org name
+    const supabase = await createServerSupabaseClient();
+    const {
+      data: { user },
+    } = await supabase.auth.getUser();
+
+    const userEmail = user?.email ?? 'unknown';
+    const orgName = `${userEmail}'s Workspace`;
+    const orgSlug = userEmail
+      .split('@')[0]
+      .toLowerCase()
+      .replace(/[^a-z0-9]+/g, '-')
+      .replace(/^-|-$/g, '');
+
+    // Check if user already has an org (edge case: they have one but didn't send it)
+    const { data: existingMemberships } = await admin
+      .from('org_members')
+      .select('org_id')
+      .eq('user_id', userId)
+      .limit(1);
+
+    if (existingMemberships && existingMemberships.length > 0) {
+      orgId = existingMemberships[0].org_id;
+    } else {
+      // Create new org
+      const { data: newOrg, error: orgError } = await admin
+        .from('organizations')
+        .insert({ name: orgName, slug: orgSlug })
+        .select()
+        .single();
+
+      if (orgError) {
+        console.error('[projects] org create error:', orgError);
+        return NextResponse.json(
+          { error: 'Failed to create organization' },
+          { status: 500 },
+        );
+      }
+
+      // Link user as owner
+      const { error: memberError } = await admin
+        .from('org_members')
+        .insert({ org_id: newOrg.id, user_id: userId, role: 'owner' });
+
+      if (memberError) {
+        console.error('[projects] org_member create error:', memberError);
+        return NextResponse.json(
+          { error: 'Failed to create organization membership' },
+          { status: 500 },
+        );
+      }
+
+      orgId = newOrg.id;
+    }
+  }
 
   // Verify user is admin/owner in the org
   const { data: membership } = await admin
     .from('org_members')
     .select('role')
     .eq('user_id', userId)
-    .eq('org_id', body.org_id)
+    .eq('org_id', orgId)
     .single();
 
   if (!membership || !['owner', 'admin'].includes(membership.role)) {
@@ -149,7 +202,7 @@ export async function POST(request: NextRequest) {
   const { data: project, error: projError } = await admin
     .from('projects')
     .insert({
-      org_id: body.org_id,
+      org_id: orgId,
       name: body.name.trim(),
       slug,
     })

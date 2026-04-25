@@ -1,5 +1,7 @@
 'use client';
 
+import { useState } from 'react';
+import { useMutation, useQueryClient } from '@tanstack/react-query';
 import {
   Card,
   CardContent,
@@ -17,6 +19,18 @@ import {
 } from '@/components/ui/table';
 import { Badge } from '@/components/ui/badge';
 import { Skeleton } from '@/components/ui/skeleton';
+import { Button } from '@/components/ui/button';
+import { Input } from '@/components/ui/input';
+import { Label } from '@/components/ui/label';
+import {
+  Dialog,
+  DialogContent,
+  DialogDescription,
+  DialogFooter,
+  DialogHeader,
+  DialogTitle,
+  DialogTrigger,
+} from '@/components/ui/dialog';
 import {
   DollarSignIcon,
   ActivityIcon,
@@ -208,6 +222,30 @@ function EmptyState({ message }: { message: string }) {
 // Onboarding Card
 // ---------------------------------------------------------------------------
 function OnboardingCard() {
+  const [open, setOpen] = useState(false);
+  const [name, setName] = useState('');
+  const queryClient = useQueryClient();
+
+  const mutation = useMutation({
+    mutationFn: async (projectName: string) => {
+      const res = await fetch('/api/v1/projects', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ name: projectName }),
+      });
+      if (!res.ok) {
+        const body = await res.json().catch(() => ({}));
+        throw new Error(body.error ?? 'Failed to create project');
+      }
+      return res.json();
+    },
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ['projects'] });
+      setName('');
+      setOpen(false);
+    },
+  });
+
   return (
     <div className="flex flex-1 items-center justify-center py-12">
       <Card className="max-w-md w-full">
@@ -221,13 +259,57 @@ function OnboardingCard() {
           </CardDescription>
         </CardHeader>
         <CardContent className="flex justify-center">
-          <a
-            href="/settings"
-            className="inline-flex items-center gap-2 rounded-md bg-primary px-4 py-2 text-sm font-medium text-primary-foreground transition-colors hover:bg-primary/90"
-          >
-            <PlusIcon className="size-4" />
-            Create your first project
-          </a>
+          <Dialog open={open} onOpenChange={setOpen}>
+            <DialogTrigger
+              render={
+                <Button>
+                  <PlusIcon className="size-4" data-icon="inline-start" />
+                  Create Project
+                </Button>
+              }
+            />
+            <DialogContent>
+              <DialogHeader>
+                <DialogTitle>Create Your First Project</DialogTitle>
+                <DialogDescription>
+                  A project groups your agents, traces, and API keys together.
+                </DialogDescription>
+              </DialogHeader>
+              <div className="grid gap-3 py-2">
+                <div className="grid gap-1.5">
+                  <Label htmlFor="onboarding-project-name">Project name</Label>
+                  <Input
+                    id="onboarding-project-name"
+                    placeholder="e.g. Production Agents"
+                    value={name}
+                    onChange={(e) =>
+                      setName((e.target as HTMLInputElement).value)
+                    }
+                    onKeyDown={(e) => {
+                      if (e.key === 'Enter' && name.trim()) {
+                        mutation.mutate(name.trim());
+                      }
+                    }}
+                  />
+                </div>
+                {mutation.error && (
+                  <p className="text-xs text-destructive">
+                    {mutation.error instanceof Error
+                      ? mutation.error.message
+                      : 'Something went wrong'}
+                  </p>
+                )}
+              </div>
+              <DialogFooter>
+                <Button
+                  onClick={() => mutation.mutate(name.trim())}
+                  disabled={!name.trim() || mutation.isPending}
+                >
+                  {mutation.isPending ? 'Creating...' : 'Create'}
+                </Button>
+              </DialogFooter>
+            </DialogContent>
+          </Dialog>
         </CardContent>
       </Card>
     </div>

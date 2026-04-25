@@ -1,6 +1,6 @@
 'use client';
 
-import { useState, useMemo } from 'react';
+import { useState, useMemo, useEffect, useCallback } from 'react';
 import { useQuery } from '@tanstack/react-query';
 import { useProjectContext } from '@/lib/project-context';
 import {
@@ -20,6 +20,7 @@ import {
   TrendingUpIcon,
   TargetIcon,
   LightbulbIcon,
+  ArrowRightLeftIcon,
 } from 'lucide-react';
 import {
   Card,
@@ -31,6 +32,18 @@ import {
 import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
 import { Skeleton } from '@/components/ui/skeleton';
+import { Input } from '@/components/ui/input';
+import { Label } from '@/components/ui/label';
+import {
+  Dialog,
+  DialogContent,
+  DialogDescription,
+  DialogFooter,
+  DialogHeader,
+  DialogTitle,
+  DialogTrigger,
+} from '@/components/ui/dialog';
+import { Progress } from '@base-ui/react/progress';
 import {
   Table,
   TableBody,
@@ -123,6 +136,51 @@ const OPTIMIZATION_SUGGESTIONS = [
 ];
 
 // ---------------------------------------------------------------------------
+// Provider comparison pricing (per 1M tokens in USD)
+// ---------------------------------------------------------------------------
+
+const MODEL_PRICING: Record<string, { input: number; output: number }> = {
+  'claude-opus-4': { input: 15, output: 75 },
+  'claude-sonnet-4': { input: 3, output: 15 },
+  'claude-haiku-3.5': { input: 0.8, output: 4 },
+  'gpt-4o': { input: 2.5, output: 10 },
+  'gpt-4o-mini': { input: 0.15, output: 0.6 },
+  'gpt-4.1': { input: 2.0, output: 8.0 },
+  'gpt-4.1-mini': { input: 0.4, output: 1.6 },
+  'gemini-2.5-pro': { input: 1.25, output: 10 },
+  'gemini-2.5-flash': { input: 0.3, output: 2.5 },
+  'deepseek-chat': { input: 0.27, output: 1.1 },
+};
+
+const COMPETITOR_MAP: Record<string, string> = {
+  'claude-opus-4': 'gpt-4o',
+  'claude-sonnet-4': 'gpt-4o',
+  'claude-haiku-3.5': 'gpt-4o-mini',
+  'gpt-4o': 'claude-sonnet-4',
+  'gpt-4o-mini': 'claude-haiku-3.5',
+  'gpt-4.1': 'claude-sonnet-4',
+  'gpt-4.1-mini': 'claude-haiku-3.5',
+  'gemini-2.5-pro': 'claude-sonnet-4',
+  'gemini-2.5-flash': 'claude-haiku-3.5',
+  'deepseek-chat': 'gpt-4o-mini',
+};
+
+function computeAlternativeCost(
+  modelName: string,
+  inputTokens: number,
+  outputTokens: number,
+): { altModel: string; altCost: number } | null {
+  const altModelName = COMPETITOR_MAP[modelName];
+  if (!altModelName) return null;
+  const altPricing = MODEL_PRICING[altModelName];
+  if (!altPricing) return null;
+  const altCost =
+    (inputTokens / 1_000_000) * altPricing.input +
+    (outputTokens / 1_000_000) * altPricing.output;
+  return { altModel: altModelName, altCost };
+}
+
+// ---------------------------------------------------------------------------
 // Data fetching
 // ---------------------------------------------------------------------------
 
@@ -154,9 +212,50 @@ async function fetchCosts<T>(
 // Page
 // ---------------------------------------------------------------------------
 
+const BUDGET_STORAGE_KEY = 'agentbeam_monthly_budget';
+
+function getBudgetKey(projectId: string | null): string {
+  return projectId ? `${BUDGET_STORAGE_KEY}_${projectId}` : BUDGET_STORAGE_KEY;
+}
+
 export default function CostsPage() {
   const { projectId } = useProjectContext();
   const [period, setPeriod] = useState<Period>('30d');
+
+  // Budget state
+  const [budget, setBudget] = useState<number | null>(null);
+  const [budgetDialogOpen, setBudgetDialogOpen] = useState(false);
+  const [budgetInput, setBudgetInput] = useState('');
+
+  // Load budget from localStorage
+  useEffect(() => {
+    if (typeof window === 'undefined') return;
+    const stored = localStorage.getItem(getBudgetKey(projectId));
+    if (stored) {
+      const parsed = parseFloat(stored);
+      if (!isNaN(parsed) && parsed > 0) {
+        setBudget(parsed);
+      }
+    } else {
+      setBudget(null);
+    }
+  }, [projectId]);
+
+  const handleSaveBudget = useCallback(() => {
+    const val = parseFloat(budgetInput);
+    if (isNaN(val) || val <= 0) return;
+    setBudget(val);
+    localStorage.setItem(getBudgetKey(projectId), String(val));
+    setBudgetDialogOpen(false);
+    setBudgetInput('');
+  }, [budgetInput, projectId]);
+
+  const handleClearBudget = useCallback(() => {
+    setBudget(null);
+    localStorage.removeItem(getBudgetKey(projectId));
+    setBudgetDialogOpen(false);
+    setBudgetInput('');
+  }, [projectId]);
 
   // Fetch all groupings in parallel
   const hourQuery = useQuery({
@@ -295,6 +394,36 @@ export default function CostsPage() {
     }));
   }, [modelQuery.data]);
 
+  // Provider comparison data
+  const providerComparisonData = useMemo(() => {
+    if (!modelQuery.data?.data) return [];
+    return modelQuery.data.data
+      .filter((m) => COMPETITOR_MAP[m.model_name])
+      .map((m) => {
+        const alt = computeAlternativeCost(
+          m.model_name,
+          m.total_input_tokens,
+          m.total_output_tokens,
+        );
+        if (!alt) return null;
+        const diff =
+          m.total_cost > 0
+            ? ((alt.altCost - m.total_cost) / m.total_cost) * 100
+            : 0;
+        return {
+          model: m.model_name,
+          provider: m.model_provider,
+          currentCost: m.total_cost,
+          altModel: alt.altModel,
+          altCost: alt.altCost,
+          diffPct: diff,
+        };
+      })
+      .filter(
+        (row): row is NonNullable<typeof row> => row !== null && row.currentCost > 0,
+      );
+  }, [modelQuery.data]);
+
   return (
     <>
       {/* Page header */}
@@ -354,14 +483,148 @@ export default function CostsPage() {
           <CardContent>
             {isLoading ? (
               <Skeleton className="h-8 w-32" />
+            ) : budget !== null ? (
+              (() => {
+                const pct = Math.min((totalSpend / budget) * 100, 100);
+                const barColor =
+                  pct >= 80
+                    ? 'bg-red-500'
+                    : pct >= 60
+                      ? 'bg-yellow-500'
+                      : 'bg-green-500';
+                return (
+                  <>
+                    <div className="text-2xl font-bold">
+                      {formatCurrency(totalSpend)}{' '}
+                      <span className="text-base font-normal text-muted-foreground">
+                        / {formatCurrency(budget)} ({pct.toFixed(0)}%)
+                      </span>
+                    </div>
+                    <Progress.Root
+                      value={pct}
+                      className="mt-2"
+                      aria-label="Budget usage"
+                    >
+                      <Progress.Track className="h-2 w-full overflow-hidden rounded-full bg-muted">
+                        <Progress.Indicator
+                          className={`h-full rounded-full transition-all duration-300 ${barColor}`}
+                          style={{ width: `${pct}%` }}
+                        />
+                      </Progress.Track>
+                    </Progress.Root>
+                    <Dialog open={budgetDialogOpen} onOpenChange={setBudgetDialogOpen}>
+                      <DialogTrigger
+                        render={
+                          <Button
+                            variant="ghost"
+                            size="xs"
+                            className="mt-1.5 -ml-2 text-xs text-muted-foreground"
+                            onClick={() => {
+                              setBudgetInput(String(budget));
+                              setBudgetDialogOpen(true);
+                            }}
+                          />
+                        }
+                      >
+                        Edit budget
+                      </DialogTrigger>
+                      <DialogContent>
+                        <DialogHeader>
+                          <DialogTitle>Set Monthly Budget</DialogTitle>
+                          <DialogDescription>
+                            Set a monthly spending budget to track your usage.
+                          </DialogDescription>
+                        </DialogHeader>
+                        <div className="grid gap-3 py-2">
+                          <div className="grid gap-1.5">
+                            <Label htmlFor="budget-amount">Monthly Budget ($)</Label>
+                            <div className="relative">
+                              <span className="absolute left-2.5 top-1/2 -translate-y-1/2 text-sm text-muted-foreground">
+                                $
+                              </span>
+                              <Input
+                                id="budget-amount"
+                                type="number"
+                                min={0}
+                                step="1"
+                                placeholder="100"
+                                value={budgetInput}
+                                onChange={(e) => setBudgetInput(e.target.value)}
+                                className="pl-6"
+                              />
+                            </div>
+                          </div>
+                        </div>
+                        <DialogFooter>
+                          <Button variant="destructive" size="sm" onClick={handleClearBudget}>
+                            Remove Budget
+                          </Button>
+                          <Button onClick={handleSaveBudget}>Save</Button>
+                        </DialogFooter>
+                      </DialogContent>
+                    </Dialog>
+                  </>
+                );
+              })()
             ) : (
               <>
                 <div className="text-2xl font-bold text-muted-foreground">
                   No budget set
                 </div>
-                <p className="text-xs text-muted-foreground">
-                  Configure in Settings
-                </p>
+                <Dialog open={budgetDialogOpen} onOpenChange={setBudgetDialogOpen}>
+                  <DialogTrigger
+                    render={
+                      <Button
+                        variant="outline"
+                        size="sm"
+                        className="mt-1"
+                        onClick={() => {
+                          setBudgetInput('');
+                          setBudgetDialogOpen(true);
+                        }}
+                      />
+                    }
+                  >
+                    Set Budget
+                  </DialogTrigger>
+                  <DialogContent>
+                    <DialogHeader>
+                      <DialogTitle>Set Monthly Budget</DialogTitle>
+                      <DialogDescription>
+                        Set a monthly spending budget to track your usage.
+                      </DialogDescription>
+                    </DialogHeader>
+                    <div className="grid gap-3 py-2">
+                      <div className="grid gap-1.5">
+                        <Label htmlFor="budget-amount-new">Monthly Budget ($)</Label>
+                        <div className="relative">
+                          <span className="absolute left-2.5 top-1/2 -translate-y-1/2 text-sm text-muted-foreground">
+                            $
+                          </span>
+                          <Input
+                            id="budget-amount-new"
+                            type="number"
+                            min={0}
+                            step="1"
+                            placeholder="100"
+                            value={budgetInput}
+                            onChange={(e) => setBudgetInput(e.target.value)}
+                            className="pl-6"
+                          />
+                        </div>
+                      </div>
+                    </div>
+                    <DialogFooter>
+                      <Button
+                        variant="outline"
+                        onClick={() => setBudgetDialogOpen(false)}
+                      >
+                        Cancel
+                      </Button>
+                      <Button onClick={handleSaveBudget}>Save</Button>
+                    </DialogFooter>
+                  </DialogContent>
+                </Dialog>
               </>
             )}
           </CardContent>
@@ -619,6 +882,71 @@ export default function CostsPage() {
                 </TableBody>
               </Table>
             )}
+          </CardContent>
+        </Card>
+      )}
+
+      {/* Provider Comparison */}
+      {!isEmpty && providerComparisonData.length > 0 && (
+        <Card>
+          <CardHeader>
+            <div className="flex items-center gap-2">
+              <ArrowRightLeftIcon className="size-4 text-blue-500" />
+              <CardTitle>Provider Comparison</CardTitle>
+            </div>
+            <CardDescription>
+              What would your workload cost on a different provider?
+            </CardDescription>
+          </CardHeader>
+          <CardContent>
+            <Table>
+              <TableHeader>
+                <TableRow>
+                  <TableHead>Current Model</TableHead>
+                  <TableHead className="text-right">Current Cost</TableHead>
+                  <TableHead>Alternative</TableHead>
+                  <TableHead className="text-right">Alt Cost</TableHead>
+                  <TableHead className="text-right">Difference</TableHead>
+                </TableRow>
+              </TableHeader>
+              <TableBody>
+                {providerComparisonData.map((row) => {
+                  const isCheaper = row.diffPct < 0;
+                  const isMore = row.diffPct > 0;
+                  return (
+                    <TableRow key={row.model}>
+                      <TableCell className="font-medium">
+                        {row.model}
+                      </TableCell>
+                      <TableCell className="text-right font-medium">
+                        {formatCurrency(row.currentCost)}
+                      </TableCell>
+                      <TableCell>
+                        <Badge variant="secondary">{row.altModel}</Badge>
+                      </TableCell>
+                      <TableCell className="text-right font-medium">
+                        {formatCurrency(row.altCost)}
+                      </TableCell>
+                      <TableCell className="text-right">
+                        <span
+                          className={
+                            isCheaper
+                              ? 'text-emerald-500'
+                              : isMore
+                                ? 'text-red-400'
+                                : 'text-muted-foreground'
+                          }
+                        >
+                          {isCheaper ? '' : '+'}
+                          {row.diffPct.toFixed(0)}%{' '}
+                          {isCheaper ? 'cheaper' : isMore ? 'more' : ''}
+                        </span>
+                      </TableCell>
+                    </TableRow>
+                  );
+                })}
+              </TableBody>
+            </Table>
           </CardContent>
         </Card>
       )}

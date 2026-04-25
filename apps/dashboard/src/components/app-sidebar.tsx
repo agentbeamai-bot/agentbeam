@@ -1,7 +1,8 @@
 'use client';
 
+import { useEffect, useState } from 'react';
 import Link from 'next/link';
-import { usePathname } from 'next/navigation';
+import { usePathname, useRouter } from 'next/navigation';
 import {
   LayoutDashboardIcon,
   ActivityIcon,
@@ -13,6 +14,7 @@ import {
   LogOutIcon,
   ZapIcon,
 } from 'lucide-react';
+import { createClient } from '@/lib/supabase/client';
 
 import {
   Sidebar,
@@ -71,6 +73,26 @@ const navItems = [
 
 export function AppSidebar() {
   const pathname = usePathname();
+  const router = useRouter();
+
+  const [userEmail, setUserEmail] = useState<string | null>(null);
+
+  useEffect(() => {
+    const supabase = createClient();
+    supabase.auth.getUser().then(({ data: { user } }) => {
+      setUserEmail(user?.email ?? null);
+    });
+  }, []);
+
+  const displayName = userEmail ? userEmail.split('@')[0] : 'User';
+  const displayEmail = userEmail ?? 'user@example.com';
+  const avatarInitial = displayEmail[0].toUpperCase();
+
+  async function handleSignOut() {
+    const supabase = createClient();
+    await supabase.auth.signOut();
+    router.push('/');
+  }
 
   return (
     <Sidebar collapsible="icon">
@@ -127,12 +149,12 @@ export function AppSidebar() {
                 }
               >
                 <Avatar size="sm">
-                  <AvatarFallback>U</AvatarFallback>
+                  <AvatarFallback>{avatarInitial}</AvatarFallback>
                 </Avatar>
                 <div className="grid flex-1 text-left text-sm leading-tight">
-                  <span className="truncate font-semibold">User</span>
+                  <span className="truncate font-semibold">{displayName}</span>
                   <span className="truncate text-xs text-muted-foreground">
-                    user@example.com
+                    {displayEmail}
                   </span>
                 </div>
                 <ChevronsUpDownIcon className="ml-auto size-4" />
@@ -148,7 +170,7 @@ export function AppSidebar() {
                   Account Settings
                 </DropdownMenuItem>
                 <DropdownMenuSeparator />
-                <DropdownMenuItem>
+                <DropdownMenuItem onClick={handleSignOut}>
                   <LogOutIcon />
                   Sign Out
                 </DropdownMenuItem>

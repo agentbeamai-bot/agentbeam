@@ -89,15 +89,18 @@ function CreateProjectDialog() {
   const queryClient = useQueryClient();
   const { projects } = useProjectContext();
 
-  // Derive org_id from existing projects (user must have at least one org)
-  const orgId = projects.length > 0 ? projects[0].org_id : null;
+  // Derive org_id from existing projects if available; backend auto-creates if missing
+  const orgId = projects.length > 0 ? projects[0].org_id : undefined;
 
   const mutation = useMutation({
     mutationFn: async (projectName: string) => {
+      const payload: { name: string; org_id?: string } = { name: projectName };
+      if (orgId) payload.org_id = orgId;
+
       const res = await fetch('/api/v1/projects', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ name: projectName, org_id: orgId }),
+        body: JSON.stringify(payload),
       });
       if (!res.ok) {
         const body = await res.json().catch(() => ({}));
@@ -116,7 +119,7 @@ function CreateProjectDialog() {
     <Dialog open={open} onOpenChange={setOpen}>
       <DialogTrigger
         render={
-          <Button size="sm" disabled={!orgId}>
+          <Button size="sm">
             <PlusIcon className="size-3.5" data-icon="inline-start" />
             Create Project
           </Button>

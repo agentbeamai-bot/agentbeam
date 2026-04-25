@@ -46,6 +46,7 @@ const features = [
     description:
       'Agent identity management, least-privilege access control, and full audit trails.',
     comingSoon: true,
+    href: '/coming-soon/security-vault',
   },
   {
     icon: FlaskConicalIcon,
@@ -53,6 +54,7 @@ const features = [
     description:
       'Regression testing, A/B testing, and eval-gated deployments for your agent prompts.',
     comingSoon: true,
+    href: '/coming-soon/testing-lab',
   },
 ];
 
@@ -251,9 +253,8 @@ export default function LandingPage() {
         <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-3">
           {features.map((f) => {
             const Icon = f.icon;
-            return (
+            const card = (
               <div
-                key={f.title}
                 className="group relative rounded-xl border border-white/[0.06] bg-white/[0.03] p-6 backdrop-blur-xl transition-colors hover:border-white/[0.1] hover:bg-white/[0.05]"
               >
                 <div className="mb-4 flex size-10 items-center justify-center rounded-lg bg-blue-500/10">
@@ -272,6 +273,16 @@ export default function LandingPage() {
                 </p>
               </div>
             );
+
+            if (f.href) {
+              return (
+                <Link key={f.title} href={f.href}>
+                  {card}
+                </Link>
+              );
+            }
+
+            return <div key={f.title}>{card}</div>;
           })}
         </div>
       </section>
