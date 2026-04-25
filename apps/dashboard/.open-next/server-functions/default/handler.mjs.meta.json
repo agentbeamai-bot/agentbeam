@@ -3668,12 +3668,12 @@
       "imports": [],
       "format": "cjs"
     },
-    ".open-next/server-functions/default/.next/server/app/api/v1/agents/route_client-reference-manifest.js": {
+    ".open-next/server-functions/default/.next/server/app/api/v1/alerts/route_client-reference-manifest.js": {
       "bytes": 318,
       "imports": [],
       "format": "cjs"
     },
-    ".open-next/server-functions/default/.next/server/app/api/v1/alerts/route_client-reference-manifest.js": {
+    ".open-next/server-functions/default/.next/server/app/api/v1/agents/route_client-reference-manifest.js": {
       "bytes": 318,
       "imports": [],
       "format": "cjs"
@@ -3747,14 +3747,14 @@
           "original": "/Users/qash/MEGA/Business Ideas/AgentBeam/apps/dashboard/.open-next/server-functions/default/.next/server/app/api/v1/ingest/route_client-reference-manifest.js"
         },
         {
-          "path": ".open-next/server-functions/default/.next/server/app/api/v1/agents/route_client-reference-manifest.js",
-          "kind": "require-call",
-          "original": "/Users/qash/MEGA/Business Ideas/AgentBeam/apps/dashboard/.open-next/server-functions/default/.next/server/app/api/v1/agents/route_client-reference-manifest.js"
-        },
-        {
           "path": ".open-next/server-functions/default/.next/server/app/api/v1/alerts/route_client-reference-manifest.js",
           "kind": "require-call",
           "original": "/Users/qash/MEGA/Business Ideas/AgentBeam/apps/dashboard/.open-next/server-functions/default/.next/server/app/api/v1/alerts/route_client-reference-manifest.js"
+        },
+        {
+          "path": ".open-next/server-functions/default/.next/server/app/api/v1/agents/route_client-reference-manifest.js",
+          "kind": "require-call",
+          "original": "/Users/qash/MEGA/Business Ideas/AgentBeam/apps/dashboard/.open-next/server-functions/default/.next/server/app/api/v1/agents/route_client-reference-manifest.js"
         },
         {
           "path": ".open-next/server-functions/default/.next/server/app/api/v1/costs/route_client-reference-manifest.js",
@@ -9766,10 +9766,10 @@
         ".open-next/server-functions/default/.next/server/app/api/v1/ingest/route_client-reference-manifest.js": {
           "bytesInOutput": 468
         },
-        ".open-next/server-functions/default/.next/server/app/api/v1/agents/route_client-reference-manifest.js": {
+        ".open-next/server-functions/default/.next/server/app/api/v1/alerts/route_client-reference-manifest.js": {
           "bytesInOutput": 468
         },
-        ".open-next/server-functions/default/.next/server/app/api/v1/alerts/route_client-reference-manifest.js": {
+        ".open-next/server-functions/default/.next/server/app/api/v1/agents/route_client-reference-manifest.js": {
           "bytesInOutput": 469
         },
         ".open-next/server-functions/default/.next/server/app/api/v1/costs/route_client-reference-manifest.js": {
