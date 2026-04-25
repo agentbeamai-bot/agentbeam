@@ -64,15 +64,14 @@ const steps = [
     step: '1',
     title: 'Install the SDK',
     description: null,
-    code: `pip install agentbeam\n\nimport agentbeam\nagentbeam.init(api_key="ab_...")`,
+    code: `pip install agentbeam\n# or: npm install agentbeam`,
   },
   {
     icon: ZapIcon,
     step: '2',
-    title: 'Run your agents',
-    description:
-      'Your existing code works unchanged. We auto-capture everything.',
-    code: null,
+    title: 'Set your API key and run',
+    description: null,
+    code: `# Python\nAGENTBEAM_API_KEY=ab_... python -m agentbeam your_script.py\n\n# Node.js\nAGENTBEAM_API_KEY=ab_... node --require agentbeam/auto app.js`,
   },
   {
     icon: EyeIcon,

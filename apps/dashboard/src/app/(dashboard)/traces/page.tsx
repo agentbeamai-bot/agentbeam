@@ -417,7 +417,7 @@ export default function TracesPage() {
               <p className="text-sm font-medium">No traces found</p>
               <p className="text-xs">
                 {traces.length === 0
-                  ? 'Install the SDK and send your first trace.'
+                  ? 'Run: pip install agentbeam then AGENTBEAM_API_KEY=your_key python -m agentbeam your_script.py'
                   : 'Try adjusting your filters or search query.'}
               </p>
             </div>

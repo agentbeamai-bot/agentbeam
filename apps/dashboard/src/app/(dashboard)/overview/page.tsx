@@ -657,7 +657,7 @@ export default function OverviewPage() {
             {isLoading ? (
               <ChartSkeleton />
             ) : !hasCostData ? (
-              <EmptyState message="No data yet. Connect an SDK to get started." />
+              <EmptyState message="No data yet. Run: pip install agentbeam then AGENTBEAM_API_KEY=your_key python -m agentbeam your_script.py" />
             ) : (
               <ResponsiveContainer width="100%" height={280}>
                 <AreaChart data={costTimeseries}>
@@ -729,7 +729,7 @@ export default function OverviewPage() {
             {isLoading ? (
               <ChartSkeleton />
             ) : !hasAgentData ? (
-              <EmptyState message="No data yet. Connect an SDK to get started." />
+              <EmptyState message="No data yet. Run: pip install agentbeam then AGENTBEAM_API_KEY=your_key python -m agentbeam your_script.py" />
             ) : (
               <ResponsiveContainer width="100%" height={280}>
                 <BarChart
@@ -783,7 +783,7 @@ export default function OverviewPage() {
           {isLoading ? (
             <TableSkeleton />
           ) : !hasAgentData ? (
-            <EmptyState message="No data yet. Connect an SDK to get started." />
+            <EmptyState message="No data yet. Run: pip install agentbeam then AGENTBEAM_API_KEY=your_key python -m agentbeam your_script.py" />
           ) : (
             <Table>
               <TableHeader>

@@ -151,18 +151,15 @@ export default function AgentsPage() {
                   2
                 </span>
                 <div className="min-w-0 flex-1">
-                  <p className="text-sm font-medium">Add to your code</p>
+                  <p className="text-sm font-medium">Install and run (no code changes needed)</p>
                   <pre className="mt-2 overflow-x-auto rounded-lg border border-white/[0.06] bg-black/30 p-3 text-xs leading-relaxed text-zinc-300">
-                    <code>{`# Python — add these 2 lines before your Anthropic/OpenAI calls
-import sys; sys.path.insert(0, "path/to/agentbeam/packages/sdk-python")
-import agentbeam
+                    <code>{`# Python
+pip install agentbeam
+AGENTBEAM_API_KEY=your_key python -m agentbeam your_script.py
 
-agentbeam.init(
-    api_key="your_api_key",
-    api_url="https://agentbeam.agentbeamai.workers.dev/api/v1",
-    agent_name="my-agent"
-)
-# That's it — all LLM calls are now traced`}</code>
+# Node.js
+npm install agentbeam
+AGENTBEAM_API_KEY=your_key node --require agentbeam/auto app.js`}</code>
                   </pre>
                 </div>
               </li>
