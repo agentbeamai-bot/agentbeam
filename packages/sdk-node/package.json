@@ -1,0 +1,41 @@
+{
+  "name": "agentbeam",
+  "version": "0.1.0",
+  "description": "Monitor, debug, and manage the cost of AI agents in production",
+  "main": "dist/index.js",
+  "types": "dist/index.d.ts",
+  "files": [
+    "dist"
+  ],
+  "scripts": {
+    "build": "tsc",
+    "dev": "tsc --watch",
+    "typecheck": "tsc --noEmit"
+  },
+  "keywords": [
+    "ai",
+    "agent",
+    "monitoring",
+    "observability",
+    "llm",
+    "openai",
+    "anthropic"
+  ],
+  "license": "MIT",
+  "peerDependencies": {
+    "anthropic": ">=0.20.0",
+    "openai": ">=4.0.0"
+  },
+  "peerDependenciesMeta": {
+    "anthropic": {
+      "optional": true
+    },
+    "openai": {
+      "optional": true
+    }
+  },
+  "devDependencies": {
+    "@types/node": "^25.6.0",
+    "typescript": "^6.0.3"
+  }
+}

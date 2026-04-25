@@ -1,0 +1,15 @@
+{
+  "name": "agentbeam",
+  "private": true,
+  "version": "0.1.0",
+  "description": "AI Agent Infrastructure Platform — Monitor, debug, and manage the cost of AI agents in production",
+  "scripts": {
+    "dev": "pnpm --filter dashboard dev",
+    "build": "pnpm --filter dashboard build",
+    "lint": "pnpm --filter dashboard lint",
+    "db:migrate": "node scripts/migrate.mjs"
+  },
+  "engines": {
+    "node": ">=20"
+  }
+}

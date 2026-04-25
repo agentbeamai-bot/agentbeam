@@ -1,0 +1,48 @@
+# Dependencies
+node_modules/
+.pnpm-store/
+
+# Environment variables (NEVER commit these)
+.env
+.env.local
+.env.*.local
+.dev.vars
+
+# Build output
+.next/
+out/
+dist/
+build/
+.turbo/
+
+# Python
+__pycache__/
+*.pyc
+*.pyo
+*.egg-info/
+.venv/
+venv/
+
+# OS
+.DS_Store
+Thumbs.db
+
+# IDE
+.vscode/
+.idea/
+*.swp
+*.swo
+
+# Supabase local
+supabase/.temp/
+
+# Cloudflare
+.wrangler/
+
+# Test coverage
+coverage/
+.nyc_output/
+
+# Logs
+*.log
+npm-debug.log*
