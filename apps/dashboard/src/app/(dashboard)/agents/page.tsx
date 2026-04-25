@@ -5,6 +5,7 @@ import { useProjectContext } from '@/lib/project-context';
 import {
   Card,
   CardContent,
+  CardDescription,
   CardHeader,
   CardTitle,
 } from '@/components/ui/card';
@@ -16,7 +17,7 @@ import {
   formatRelativeTime,
   formatNumber,
 } from '@/lib/utils/format';
-import { BotIcon, InboxIcon } from 'lucide-react';
+import { BotIcon, InboxIcon, InfoIcon } from 'lucide-react';
 
 // ---------------------------------------------------------------------------
 // Types
@@ -107,23 +108,95 @@ export default function AgentsPage() {
           </CardContent>
         </Card>
       ) : agents.length === 0 ? (
-        <Card>
-          <CardContent className="py-16">
-            <div className="flex flex-col items-center justify-center gap-2 text-muted-foreground">
-              <BotIcon className="size-10 opacity-40" />
-              <p className="text-sm font-medium">No agents detected</p>
-              <p className="text-xs">
-                Install the AgentBeam SDK to register your first agent.
-              </p>
+        <Card className="max-w-2xl">
+          <CardHeader>
+            <div className="flex items-center gap-3">
+              <div className="flex size-10 items-center justify-center rounded-xl bg-blue-500/10 ring-1 ring-blue-500/20">
+                <BotIcon className="size-5 text-blue-400" />
+              </div>
+              <div>
+                <CardTitle>Connect Your First Agent</CardTitle>
+                <CardDescription>
+                  Agents automatically appear here when they send their first
+                  trace. Here&apos;s how to get started:
+                </CardDescription>
+              </div>
             </div>
+          </CardHeader>
+          <CardContent>
+            <ol className="space-y-6">
+              {/* Step 1 */}
+              <li className="flex gap-3">
+                <span className="flex size-7 shrink-0 items-center justify-center rounded-full bg-white/[0.06] text-xs font-medium text-muted-foreground ring-1 ring-white/[0.08]">
+                  1
+                </span>
+                <div>
+                  <p className="text-sm font-medium">Get your API key</p>
+                  <p className="mt-0.5 text-xs text-muted-foreground">
+                    Go to{' '}
+                    <a
+                      href="/settings"
+                      className="text-primary underline underline-offset-2"
+                    >
+                      Settings
+                    </a>{' '}
+                    &rarr; Generate New Key
+                  </p>
+                </div>
+              </li>
+
+              {/* Step 2 */}
+              <li className="flex gap-3">
+                <span className="flex size-7 shrink-0 items-center justify-center rounded-full bg-white/[0.06] text-xs font-medium text-muted-foreground ring-1 ring-white/[0.08]">
+                  2
+                </span>
+                <div className="min-w-0 flex-1">
+                  <p className="text-sm font-medium">Add to your code</p>
+                  <pre className="mt-2 overflow-x-auto rounded-lg border border-white/[0.06] bg-black/30 p-3 text-xs leading-relaxed text-zinc-300">
+                    <code>{`# Python — add these 2 lines before your Anthropic/OpenAI calls
+import sys; sys.path.insert(0, "path/to/agentbeam/packages/sdk-python")
+import agentbeam
+
+agentbeam.init(
+    api_key="your_api_key",
+    api_url="https://agentbeam.agentbeamai.workers.dev/api/v1",
+    agent_name="my-agent"
+)
+# That's it — all LLM calls are now traced`}</code>
+                  </pre>
+                </div>
+              </li>
+
+              {/* Step 3 */}
+              <li className="flex gap-3">
+                <span className="flex size-7 shrink-0 items-center justify-center rounded-full bg-white/[0.06] text-xs font-medium text-muted-foreground ring-1 ring-white/[0.08]">
+                  3
+                </span>
+                <div>
+                  <p className="text-sm font-medium">Run your agent</p>
+                  <p className="mt-0.5 text-xs text-muted-foreground">
+                    Your agents will appear here automatically.
+                  </p>
+                </div>
+              </li>
+            </ol>
           </CardContent>
         </Card>
       ) : (
-        <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-3">
-          {agents.map((agent) => (
-            <AgentCard key={agent.agent_name} agent={agent} />
-          ))}
-        </div>
+        <>
+          <div className="flex items-start gap-2 rounded-lg border border-white/[0.06] bg-white/[0.02] px-3 py-2 text-xs text-muted-foreground">
+            <InfoIcon className="mt-0.5 size-3.5 shrink-0 opacity-60" />
+            <span>
+              Agents are auto-discovered from trace data. They appear when they
+              send their first trace.
+            </span>
+          </div>
+          <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-3">
+            {agents.map((agent) => (
+              <AgentCard key={agent.agent_name} agent={agent} />
+            ))}
+          </div>
+        </>
       )}
     </>
   );

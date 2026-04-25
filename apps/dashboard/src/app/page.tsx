@@ -155,6 +155,12 @@ export default function LandingPage() {
           </Link>
           <div className="flex items-center gap-3">
             <Link
+              href="/docs"
+              className="rounded-md px-3 py-1.5 text-sm text-zinc-400 transition-colors hover:text-white"
+            >
+              Docs
+            </Link>
+            <Link
               href="/login"
               className="rounded-md px-3 py-1.5 text-sm text-zinc-400 transition-colors hover:text-white"
             >
