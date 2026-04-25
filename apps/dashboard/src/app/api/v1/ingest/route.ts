@@ -1,5 +1,6 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { createAdminClient } from '@/lib/supabase/admin';
+import { clickhouseInsert, isClickHouseConfigured } from '@/lib/clickhouse';
 
 // ---------------------------------------------------------------------------
 // Pricing table (per 1M tokens in USD)
@@ -229,6 +230,17 @@ export async function POST(request: NextRequest) {
     return NextResponse.json(
       { error: 'Failed to insert traces' },
       { status: 500 },
+    );
+  }
+
+  // 5b. Dual-write to ClickHouse (fire-and-forget)
+  if (isClickHouseConfigured()) {
+    const chRows = traceRows.map((row) => ({
+      ...row,
+      metadata: JSON.stringify(row.metadata ?? {}),
+    }));
+    clickhouseInsert('traces', chRows).catch((err) =>
+      console.error('[ingest] ClickHouse insert error:', err),
     );
   }
 

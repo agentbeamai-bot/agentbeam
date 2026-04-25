@@ -1,7 +1,7 @@
 'use client';
 
 import { useState } from 'react';
-import { useMutation, useQueryClient } from '@tanstack/react-query';
+import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
 import {
   Card,
   CardContent,
@@ -40,6 +40,8 @@ import {
   ArrowDownIcon,
   PlusIcon,
   RocketIcon,
+  CheckCircle2Icon,
+  ShieldAlertIcon,
 } from 'lucide-react';
 import {
   AreaChart,
@@ -317,6 +319,160 @@ function OnboardingCard() {
 }
 
 // ---------------------------------------------------------------------------
+// Anomalies
+// ---------------------------------------------------------------------------
+interface AnomalyItem {
+  agent_name: string;
+  metric: 'cost' | 'error_rate' | 'latency';
+  current_value: number;
+  baseline_mean: number;
+  baseline_stddev: number;
+  severity: 'warning' | 'critical';
+}
+
+function useAnomalies(projectId: string | null) {
+  return useQuery<AnomalyItem[]>({
+    queryKey: ['anomalies', projectId],
+    queryFn: async () => {
+      const res = await fetch(
+        `/api/v1/anomalies?project_id=${projectId}`,
+      );
+      if (!res.ok) throw new Error('Failed to fetch anomalies');
+      const json = await res.json();
+      return json.anomalies ?? [];
+    },
+    enabled: !!projectId,
+    refetchInterval: 60_000,
+  });
+}
+
+const METRIC_LABELS: Record<string, string> = {
+  cost: 'Cost',
+  error_rate: 'Error Rate',
+  latency: 'Latency',
+};
+
+function formatAnomalyValue(metric: string, value: number): string {
+  if (metric === 'cost') return `$${value.toFixed(4)}`;
+  if (metric === 'error_rate') return `${(value * 100).toFixed(1)}%`;
+  if (metric === 'latency') return `${Math.round(value)}ms`;
+  return String(value);
+}
+
+function AnomaliesCard({
+  anomalies,
+  isLoading,
+}: {
+  anomalies: AnomalyItem[];
+  isLoading: boolean;
+}) {
+  if (isLoading) {
+    return (
+      <Card>
+        <CardHeader>
+          <CardTitle className="flex items-center gap-2">
+            <ShieldAlertIcon className="size-5" />
+            Anomalies
+          </CardTitle>
+          <CardDescription>
+            Automatic deviation detection from 7-day baseline.
+          </CardDescription>
+        </CardHeader>
+        <CardContent>
+          <TableSkeleton />
+        </CardContent>
+      </Card>
+    );
+  }
+
+  if (anomalies.length === 0) {
+    return (
+      <Card>
+        <CardHeader>
+          <CardTitle className="flex items-center gap-2">
+            <ShieldAlertIcon className="size-5" />
+            Anomalies
+          </CardTitle>
+          <CardDescription>
+            Automatic deviation detection from 7-day baseline.
+          </CardDescription>
+        </CardHeader>
+        <CardContent>
+          <div className="flex items-center justify-center gap-2 py-8 text-sm text-muted-foreground">
+            <CheckCircle2Icon className="size-5 text-emerald-500" />
+            No anomalies detected. Everything looks normal.
+          </div>
+        </CardContent>
+      </Card>
+    );
+  }
+
+  return (
+    <Card>
+      <CardHeader>
+        <CardTitle className="flex items-center gap-2">
+          <ShieldAlertIcon className="size-5" />
+          Anomalies
+          <Badge
+            variant="secondary"
+            className="ml-1 text-xs"
+          >
+            {anomalies.length}
+          </Badge>
+        </CardTitle>
+        <CardDescription>
+          Automatic deviation detection from 7-day baseline.
+        </CardDescription>
+      </CardHeader>
+      <CardContent>
+        <Table>
+          <TableHeader>
+            <TableRow>
+              <TableHead>Severity</TableHead>
+              <TableHead>Agent</TableHead>
+              <TableHead>Metric</TableHead>
+              <TableHead className="text-right">Current</TableHead>
+              <TableHead className="text-right">Baseline</TableHead>
+            </TableRow>
+          </TableHeader>
+          <TableBody>
+            {anomalies.map((a, i) => (
+              <TableRow key={`${a.agent_name}-${a.metric}-${i}`}>
+                <TableCell>
+                  <Badge
+                    variant={
+                      a.severity === 'critical' ? 'destructive' : 'secondary'
+                    }
+                    className={
+                      a.severity === 'warning'
+                        ? 'bg-yellow-500/15 text-yellow-600 dark:text-yellow-400 hover:bg-yellow-500/20'
+                        : ''
+                    }
+                  >
+                    {a.severity}
+                  </Badge>
+                </TableCell>
+                <TableCell className="font-medium">{a.agent_name}</TableCell>
+                <TableCell>{METRIC_LABELS[a.metric] ?? a.metric}</TableCell>
+                <TableCell className="text-right font-mono">
+                  {formatAnomalyValue(a.metric, a.current_value)}
+                </TableCell>
+                <TableCell className="text-right text-muted-foreground">
+                  {formatAnomalyValue(a.metric, a.baseline_mean)}{' '}
+                  <span className="text-xs">
+                    (+/- {formatAnomalyValue(a.metric, a.baseline_stddev)})
+                  </span>
+                </TableCell>
+              </TableRow>
+            ))}
+          </TableBody>
+        </Table>
+      </CardContent>
+    </Card>
+  );
+}
+
+// ---------------------------------------------------------------------------
 // Chart Tooltip
 // ---------------------------------------------------------------------------
 function CostTooltipContent({
@@ -377,6 +533,9 @@ export default function OverviewPage() {
 
   const { stats, costTimeseries, agentSummaries, isLoading, error } =
     useDashboardData(activeProjectId);
+
+  const { data: anomalies, isLoading: anomaliesLoading } =
+    useAnomalies(activeProjectId);
 
   // --- Loading state for projects ---
   if (projectsLoading) {
@@ -680,6 +839,12 @@ export default function OverviewPage() {
           )}
         </CardContent>
       </Card>
+
+      {/* Anomalies */}
+      <AnomaliesCard
+        anomalies={anomalies ?? []}
+        isLoading={anomaliesLoading}
+      />
 
       {/* Data fetch error banner */}
       {error && (

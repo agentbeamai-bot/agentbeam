@@ -1,6 +1,7 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { createAdminClient } from '@/lib/supabase/admin';
 import { notifyTriggeredAlerts } from '@/lib/alert-notifier';
+import { detectAnomalies } from '@/app/api/v1/anomalies/route';
 
 // ---------------------------------------------------------------------------
 // Helpers
@@ -155,6 +156,37 @@ async function evaluateLatency(
   return null;
 }
 
+async function evaluateAnomaly(
+  supabase: ReturnType<typeof createAdminClient>,
+  projectId: string,
+  alert: AlertRow,
+): Promise<TriggerResult | null> {
+  const threshold = alert.config.threshold ?? 2;
+  const anomalies = await detectAnomalies(supabase, projectId, threshold);
+
+  // Only trigger on critical anomalies
+  const critical = anomalies.filter((a) => a.severity === 'critical');
+
+  if (critical.length === 0) return null;
+
+  const summaries = critical.map(
+    (a) =>
+      `${a.agent_name}: ${a.metric} is ${a.current_value} (baseline ${a.baseline_mean} +/- ${a.baseline_stddev})`,
+  );
+
+  return {
+    alert_id: alert.id,
+    name: alert.name,
+    type: alert.type,
+    details: {
+      threshold,
+      anomaly_count: critical.length,
+      anomalies: critical,
+      message: `${critical.length} critical anomal${critical.length === 1 ? 'y' : 'ies'} detected: ${summaries.join('; ')}`,
+    },
+  };
+}
+
 // ---------------------------------------------------------------------------
 // POST /api/v1/alerts/evaluate
 // ---------------------------------------------------------------------------
@@ -254,8 +286,10 @@ export async function POST(request: NextRequest) {
         case 'latency':
           result = await evaluateLatency(supabase, projectId, alert);
           break;
+        case 'anomaly':
+          result = await evaluateAnomaly(supabase, projectId, alert);
+          break;
         default:
-          // Unknown type (e.g. 'anomaly') — skip
           break;
       }
     } catch (err) {
